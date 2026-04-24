@@ -1,0 +1,19 @@
+{
+  "slug": "shooting-game",
+  "name": "シューティングゲーム",
+  "description": "宇宙を舞台にした縦スクロールシューティングゲーム。スペースシャトルを矢印キーで操作し、Aキーで弾を発射。上から来る敵を撃墜しながら約30秒でゴールに到達する、ブラウザで動作するWEBゲーム。",
+  "goal": "HTML5 Canvas + JavaScript で実装した縦スクロールシューティングゲームを完成させ、誰でもアクセスできるWEBゲームアプリとして公開できる状態にする",
+  "deadline": null,
+  "project_type": "game",
+  "tech_stack": "HTML5 Canvas + JavaScript",
+  "status": "active",
+  "departments": [
+    { "name": "ゲームデザイン部", "slug": "game-design", "role": "ゲームの詳細仕様設計・GDD作成", "created_at": "2026-04-25T00:00:00+09:00" },
+    { "name": "ゲーム実装部", "slug": "game-dev", "role": "HTML5 Canvas + JS でゲーム本体を実装", "created_at": "2026-04-25T00:00:00+09:00" },
+    { "name": "ビジュアル部", "slug": "visual", "role": "Canvas描画コードでグラフィック制作", "created_at": "2026-04-25T00:00:00+09:00" },
+    { "name": "サウンド部", "slug": "sound", "role": "Web Audio API で BGM・SE を実装", "created_at": "2026-04-25T00:00:00+09:00" },
+    { "name": "QA・公開部", "slug": "qa-publish", "role": "テスト・バランス調整・WEB公開準備", "created_at": "2026-04-25T00:00:00+09:00" }
+  ],
+  "created_at": "2026-04-25T00:00:00+09:00",
+  "updated_at": "2026-04-25T00:00:00+09:00"
+}

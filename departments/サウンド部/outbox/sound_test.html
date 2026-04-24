@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SoundManager 動作確認 — SPACE SHUTTLE</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #000011;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+      min-height: 100vh;
+    }
+    h1 {
+      color: #00ffff;
+      font-size: 1.4rem;
+      letter-spacing: 0.15em;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #666;
+      font-size: 0.75rem;
+      margin-bottom: 32px;
+    }
+    .notice {
+      background: #1a1a2e;
+      border: 1px solid #ff4444;
+      color: #ff8888;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+    .section {
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 28px;
+    }
+    .section-title {
+      color: #00ffff;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      border-bottom: 1px solid #222;
+      padding-bottom: 6px;
+      margin-bottom: 14px;
+    }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    button {
+      background: #0a0a2a;
+      border: 1px solid #00ffff;
+      color: #00ffff;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: background 0.15s, color 0.15s;
+    }
+    button:hover {
+      background: #00ffff;
+      color: #000011;
+    }
+    button:active {
+      transform: scale(0.97);
+    }
+    button.stop {
+      border-color: #ff4444;
+      color: #ff4444;
+    }
+    button.stop:hover {
+      background: #ff4444;
+      color: #000;
+    }
+    .volume-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+    }
+    .volume-label {
+      font-size: 0.8rem;
+      color: #888;
+      white-space: nowrap;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: #333;
+      outline: none;
+      border-radius: 2px;
+      flex: 1;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #00ffff;
+      cursor: pointer;
+    }
+    #vol-display {
+      color: #00ffff;
+      font-size: 0.85rem;
+      width: 36px;
+      text-align: right;
+    }
+    #status {
+      color: #888;
+      font-size: 0.75rem;
+      margin-top: 24px;
+      text-align: center;
+    }
+    #status.ok { color: #00ff88; }
+    #status.err { color: #ff4444; }
+  </style>
+</head>
+<body>
+
+  <h1>[ SOUND MANAGER TEST ]</h1>
+  <div class="subtitle">SPACE SHUTTLE — Web Audio API 動作確認</div>
+
+  <div class="notice" id="notice">
+    &#9888; ブラウザの自動再生ポリシーにより、最初のボタン操作後に音声が有効になります
+  </div>
+
+  <!-- SE セクション -->
+  <div class="section">
+    <div class="section-title">&#9658; SOUND EFFECTS (SE)</div>
+    <div class="btn-row">
+      <button onclick="playSE('shoot')">SHOOT<br><small>発射音</small></button>
+      <button onclick="playSE('explosion')">EXPLOSION<br><small>爆発音</small></button>
+      <button onclick="playSE('playerHit')">PLAYER HIT<br><small>被弾音</small></button>
+      <button onclick="playSE('gameover')">GAME OVER<br><small>ゲームオーバー音</small></button>
+      <button onclick="playSE('clear')">CLEAR<br><small>クリアファンファーレ</small></button>
+    </div>
+  </div>
+
+  <!-- BGM セクション -->
+  <div class="section">
+    <div class="section-title">&#9658; BGM (16秒ループ)</div>
+    <div class="btn-row">
+      <button onclick="startBGM()">BGM START<br><small>再生開始</small></button>
+      <button class="stop" onclick="stopBGM()">BGM STOP<br><small>停止</small></button>
+    </div>
+  </div>
+
+  <!-- 音量 -->
+  <div class="section">
+    <div class="section-title">&#9658; VOLUME</div>
+    <div class="volume-row">
+      <span class="volume-label">MASTER VOL</span>
+      <input type="range" id="vol-slider" min="0" max="100" value="50" oninput="changeVolume(this.value)">
+      <span id="vol-display">50%</span>
+    </div>
+  </div>
+
+  <div id="status">[ AudioContext: 未初期化 — 何かボタンを押してください ]</div>
+
+  <script src="sound.js"></script>
+  <script>
+    let sound = null;
+    let bgmPlaying = false;
+
+    function ensureSound() {
+      if (!sound) {
+        try {
+          sound = new SoundManager();
+          updateStatus('AudioContext 初期化済み (suspended)', 'ok');
+        } catch (e) {
+          updateStatus('エラー: ' + e.message, 'err');
+          return false;
+        }
+      }
+      // ユーザー操作のたびに resume を試みる
+      sound.resume();
+      updateStatus('AudioContext: ' + sound._ctx.state, 'ok');
+      hideNotice();
+      return true;
+    }
+
+    function playSE(name) {
+      if (!ensureSound()) return;
+      sound.playSE(name);
+      updateStatus('SE 再生: ' + name + ' | ctx: ' + sound._ctx.state, 'ok');
+    }
+
+    function startBGM() {
+      if (!ensureSound()) return;
+      if (bgmPlaying) {
+        updateStatus('BGM は既に再生中です', 'ok');
+        return;
+      }
+      sound.playBGM();
+      bgmPlaying = true;
+      updateStatus('BGM 再生開始 (16秒ループ) | ctx: ' + sound._ctx.state, 'ok');
+    }
+
+    function stopBGM() {
+      if (!ensureSound()) return;
+      sound.stopBGM();
+      bgmPlaying = false;
+      updateStatus('BGM 停止', 'ok');
+    }
+
+    function changeVolume(val) {
+      document.getElementById('vol-display').textContent = val + '%';
+      if (!sound) return;
+      sound.setVolume(val / 100);
+    }
+
+    function updateStatus(msg, cls) {
+      const el = document.getElementById('status');
+      el.textContent = '[ ' + msg + ' ]';
+      el.className = cls || '';
+    }
+
+    function hideNotice() {
+      const el = document.getElementById('notice');
+      if (el) {
+        el.style.display = 'none';
+      }
+    }
+
+    // キーボードショートカット
+    document.addEventListener('keydown', function(e) {
+      if (!sound) return;
+      sound.resume();
+      const keyMap = {
+        'z': 'shoot', 'x': 'explosion', 'c': 'playerHit',
+        'g': 'gameover', 'v': 'clear',
+        'b': () => bgmPlaying ? stopBGM() : startBGM()
+      };
+      const action = keyMap[e.key.toLowerCase()];
+      if (!action) return;
+      if (typeof action === 'function') action();
+      else playSE(action);
+    });
+  </script>
+
+  <div style="color:#333; font-size:0.7rem; margin-top:40px; text-align:center;">
+    キーボード: Z=shoot X=explosion C=playerHit G=gameover V=clear B=BGM toggle
+  </div>
+
+</body>
+</html>

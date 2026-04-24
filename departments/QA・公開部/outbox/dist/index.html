@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SPACE SHUTTLE — Shooting Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: monospace;
+      color: #ffffff;
+    }
+
+    #wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 400px;
+      height: 600px;
+      border: 2px solid #333;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    #controls {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <div id="wrapper">
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div id="controls">
+      MOVE: Arrow Keys &nbsp;|&nbsp; SHOOT: A Key &nbsp;|&nbsp; START: Space / Enter &nbsp;|&nbsp; RETRY: R Key
+    </div>
+  </div>
+
+  <!--
+    読み込み順序（依存関係に従う）:
+
+    1. サウンドモジュール（SoundManager クラス定義）
+    2. ビジュアルモジュール（各 Visual オブジェクト定義）
+       - background_visual.js  → window.BackgroundVisual
+       - ship_visual.js        → window.ShipVisual
+       - enemy_visual.js       → window.EnemyVisual
+       - objects_visual.js     → window.ObjectsVisual (弾・ゴール)
+       - effects_visual.js     → window.EffectsVisual (爆発)
+    3. ゲームロジック（Visual/Sound に依存しないものから順に）
+       - collision.js          → isColliding, checkBulletEnemyCollisions 等
+       - background.js         → BackgroundVisual を使う Background クラス
+       - bullet.js             → ObjectsVisual を使う Bullet クラス
+       - enemy.js              → EnemyVisual, EffectsVisual を使う Enemy クラス
+       - player.js             → ShipVisual を使う Player クラス
+       - game.js               → 上記すべてを使うメインループ
+  -->
+
+  <!-- サウンド -->
+  <script src="sound.js"></script>
+
+  <!-- ビジュアル -->
+  <script src="background_visual.js"></script>
+  <script src="ship_visual.js"></script>
+  <script src="enemy_visual.js"></script>
+  <script src="objects_visual.js"></script>
+  <script src="effects_visual.js"></script>
+
+  <!-- ゲームロジック -->
+  <script src="collision.js"></script>
+  <script src="background.js"></script>
+  <script src="bullet.js"></script>
+  <script src="enemy.js"></script>
+  <script src="player.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

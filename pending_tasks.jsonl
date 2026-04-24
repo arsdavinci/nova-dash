@@ -1,0 +1,2 @@
+{"id":"task-001","department":"ゲーム実装部","task_file":"projects/shooting-game/departments/ゲーム実装部/inbox/task-20260425-120000-001.md","title":"ビジュアル部・サウンド部モジュール統合 → integrated/ に動作版一式を出力","status":"pending","depends_on":null,"created_at":"2026-04-25T12:00:00+09:00"}
+{"id":"task-002","department":"QA・公開部","task_file":"projects/shooting-game/departments/QA・公開部/inbox/task-20260425-120000-002.md","title":"統合版テスト → dist/ に公開ファイル整備","status":"pending","depends_on":"task-001","created_at":"2026-04-25T12:00:00+09:00"}

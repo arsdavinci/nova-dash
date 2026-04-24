@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ビジュアル部 — 描画モジュール プレビュー</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #111;
+      color: #ccc;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      gap: 16px;
+    }
+    h1 { color: #00ffff; font-size: 16px; letter-spacing: 2px; }
+    .panels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+    }
+    .panel {
+      background: #1a1a2e;
+      border: 1px solid #334;
+      padding: 8px;
+    }
+    .panel h2 {
+      color: #88aaff;
+      font-size: 12px;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    canvas { display: block; }
+    #mainCanvas {
+      border: 1px solid #336;
+    }
+    .info {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+      max-width: 820px;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 11px;
+      color: #888;
+      justify-content: center;
+    }
+    .legend span { color: #00ffff; }
+  </style>
+</head>
+<body>
+  <h1>VISUAL MODULE PREVIEW — シューティングゲーム ビジュアル部</h1>
+
+  <div class="legend">
+    <span>background_visual.js</span> 星空スクロール /
+    <span>ship_visual.js</span> 自機シャトル /
+    <span>enemy_visual.js</span> UFO・隕石 /
+    <span>objects_visual.js</span> 弾・ゴール /
+    <span>effects_visual.js</span> 爆発エフェクト
+  </div>
+
+  <div class="panels">
+    <!-- メインCanvas: 全要素を同時表示 -->
+    <div class="panel">
+      <h2>MAIN CANVAS — 全要素同時表示 (400×600)</h2>
+      <canvas id="mainCanvas" width="400" height="600"></canvas>
+    </div>
+
+    <!-- 各要素クローズアップ -->
+    <div style="display:flex; flex-direction:column; gap:16px;">
+      <div class="panel">
+        <h2>自機シャトル (zoom)</h2>
+        <canvas id="shipCanvas" width="120" height="120"></canvas>
+      </div>
+      <div class="panel">
+        <h2>UFO (zoom)</h2>
+        <canvas id="ufoCanvas" width="120" height="80"></canvas>
+      </div>
+      <div class="panel">
+        <h2>隕石 (zoom)</h2>
+        <canvas id="meteorCanvas" width="100" height="100"></canvas>
+      </div>
+      <div class="panel">
+        <h2>ゴール (zoom)</h2>
+        <canvas id="goalCanvas" width="160" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="info">
+    座標系: 中心座標基準 (x, y) / Canvas固定サイズ 400×600px / 背景色 #000011 (GDD準拠)
+    <br>
+    弾色: #00ffff (シアン・GDD準拠) / ゴール: 64×64px 宇宙ステーション風 (GDD準拠)
+    <br>
+    自機: 32×48px (GDD準拠) / UFO: 40×24px / 隕石: 36×36px
+  </div>
+
+  <!-- 描画モジュール読み込み -->
+  <script src="background_visual.js"></script>
+  <script src="ship_visual.js"></script>
+  <script src="enemy_visual.js"></script>
+  <script src="objects_visual.js"></script>
+  <script src="effects_visual.js"></script>
+
+  <script>
+    // ---- メインCanvasのセットアップ ----
+    var mainCanvas  = document.getElementById('mainCanvas');
+    var mainCtx     = mainCanvas.getContext('2d');
+
+    var shipCanvas  = document.getElementById('shipCanvas');
+    var shipCtx     = shipCanvas.getContext('2d');
+
+    var ufoCanvas   = document.getElementById('ufoCanvas');
+    var ufoCtx      = ufoCanvas.getContext('2d');
+
+    var meteorCanvas = document.getElementById('meteorCanvas');
+    var meteorCtx   = meteorCanvas.getContext('2d');
+
+    var goalCanvas  = document.getElementById('goalCanvas');
+    var goalCtx     = goalCanvas.getContext('2d');
+
+    // ---- 星の初期化 ----
+    var stars = BackgroundVisual.init(105, 400, 600);
+
+    // ---- 爆発エフェクト管理 ----
+    var explosions = [
+      { x: 120, y: 200, frame: 0 },
+      { x: 300, y: 350, frame: 10 }, // 位相をずらす
+    ];
+
+    // ---- 弾のY位置（上下ループ） ----
+    var bulletY = 400;
+    var bulletX = 200;
+
+    // ---- メインフレームカウンタ ----
+    var frame = 0;
+
+    function drawMain() {
+      // 背景
+      BackgroundVisual.update(stars, 600);
+      BackgroundVisual.draw(mainCtx, stars);
+
+      // === デモ用ラベル描画ヘルパー ===
+      function label(ctx, text, x, y) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0,255,255,0.7)';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, x, y);
+        ctx.restore();
+      }
+
+      // ---- 自機（画面下部） ----
+      ShipVisual.draw(mainCtx, 200, 510, 32, 48, frame);
+      label(mainCtx, 'SHIP', 200, 565);
+
+      // ---- 弾（Y方向にループ） ----
+      bulletY -= 6;
+      if (bulletY < -10) bulletY = 500;
+      ObjectsVisual.drawBullet(mainCtx, bulletX, bulletY);
+      if (bulletY > 30) label(mainCtx, 'BULLET', bulletX + 20, bulletY);
+
+      // ---- UFO（X方向サイン波移動） ----
+      var ufoX = 200 + Math.sin(frame * 0.04) * 120;
+      var ufoY = 120;
+      EnemyVisual.draw(mainCtx, 'ufo', ufoX, ufoY, 40, 24, frame);
+      label(mainCtx, 'UFO', ufoX, ufoY + 24);
+
+      // ---- UFO 2体目 ----
+      var ufoX2 = 80 + Math.sin(frame * 0.03 + 1.5) * 50;
+      EnemyVisual.draw(mainCtx, 'ufo', ufoX2, 200, 40, 24, frame);
+
+      // ---- 隕石 ----
+      var meteorX = 300;
+      var meteorY = 250 + Math.sin(frame * 0.02) * 10;
+      EnemyVisual.draw(mainCtx, 'meteor', meteorX, meteorY, 36, 36, frame);
+      label(mainCtx, 'METEOR', meteorX, meteorY + 30);
+
+      // ---- ゴール（上部中央） ----
+      ObjectsVisual.drawGoal(mainCtx, 200, 60, frame);
+      label(mainCtx, 'GOAL', 200, 105);
+
+      // ---- 爆発エフェクト ----
+      for (var i = 0; i < explosions.length; i++) {
+        var ex = explosions[i];
+        EffectsVisual.drawExplosion(mainCtx, ex.x, ex.y, ex.frame, 20);
+        ex.frame++;
+        if (ex.frame >= 20) ex.frame = 0; // ループ
+      }
+
+      // ---- HUD模擬 ----
+      mainCtx.save();
+      mainCtx.fillStyle = 'rgba(0,0,0,0.5)';
+      mainCtx.fillRect(0, 0, 400, 28);
+      mainCtx.fillStyle = '#FFFFFF';
+      mainCtx.font = '13px monospace';
+      mainCtx.textAlign = 'left';
+      mainCtx.textBaseline = 'top';
+      mainCtx.fillText('SCORE: 001200', 8, 7);
+      mainCtx.textAlign = 'center';
+      mainCtx.fillText('TIME: 18', 200, 7);
+      mainCtx.textAlign = 'right';
+      mainCtx.fillText('HP: ●●●', 392, 7);
+      mainCtx.restore();
+    }
+
+    function drawShipPanel() {
+      shipCtx.fillStyle = '#000011';
+      shipCtx.fillRect(0, 0, 120, 120);
+      ShipVisual.draw(shipCtx, 60, 60, 48, 72, frame);
+
+      // 中心マーカー
+      shipCtx.strokeStyle = 'rgba(0,255,255,0.3)';
+      shipCtx.lineWidth = 0.5;
+      shipCtx.beginPath();
+      shipCtx.moveTo(60, 0); shipCtx.lineTo(60, 120);
+      shipCtx.moveTo(0, 60); shipCtx.lineTo(120, 60);
+      shipCtx.stroke();
+    }
+
+    function drawUFOPanel() {
+      ufoCtx.fillStyle = '#000011';
+      ufoCtx.fillRect(0, 0, 120, 80);
+      EnemyVisual.draw(ufoCtx, 'ufo', 60, 40, 60, 36, frame);
+    }
+
+    function drawMeteorPanel() {
+      meteorCtx.fillStyle = '#000011';
+      meteorCtx.fillRect(0, 0, 100, 100);
+      EnemyVisual.draw(meteorCtx, 'meteor', 50, 50, 54, 54, frame);
+    }
+
+    function drawGoalPanel() {
+      goalCtx.fillStyle = '#000011';
+      goalCtx.fillRect(0, 0, 160, 120);
+      ObjectsVisual.drawGoal(goalCtx, 80, 60, frame);
+    }
+
+    function loop() {
+      drawMain();
+      drawShipPanel();
+      drawUFOPanel();
+      drawMeteorPanel();
+      drawGoalPanel();
+      frame++;
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>
